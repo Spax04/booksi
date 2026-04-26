@@ -8,4 +8,11 @@ export interface IDocumentObject {
   size: number;
   mimeType: string;
   lastModified: number;
+  pagesDocument: IPageDocument[];
+  pageCount: number;
+}
+
+export interface IPageDocument {
+  text: string;
+  imageUri?: string;
 }

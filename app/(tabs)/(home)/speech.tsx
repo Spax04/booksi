@@ -12,6 +12,10 @@ import { convert, convertB64 } from 'react-native-pdf-to-image';
 import { Alert, NativeModules } from 'react-native';
 import { ExportManager } from 'react-native-pdf-jsi/src/managers/ExportManager';
 import React from 'react';
+import { GoogleGenAI ,GoogleGenAIOptions} from "@google/genai";
+import { useGeminiApi } from '@/hooks/logic/useGeminiApi';
+import * as FileSystem from 'expo-file-system';
+import { IPageDocument } from '@/store/documents/types';
 
 const PdfModule = require('react-native-pdf-jsi');
 const Pdf = PdfModule.default;
@@ -21,84 +25,43 @@ const { FileDownloader, FileManager } = NativeModules;
 
 export default function SpeechScreen() {
       const { index } = useLocalSearchParams<{ index: string }>();
-  const {handlePdfExtraction, isLoading, error} = usePdfParser();
+  const { extractTextFromPdf, isLoading, error} = usePdfParser();
   const document = useAppSelector(state => getDocumentByName(state, index));
   const [isPlaying, setIsPlaying] = useState(false);
   const [extractedText, setExtractedText] = useState<string>('');
+  const [pagesData, setPagesData] = useState<IPageDocument[]>([]);
   const [urlImage, setUrlImage] = useState<string>('');
   const [exporting, setExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [showExportMenu, setShowExportMenu] = useState(false);
-
+ const { imageToText } = useGeminiApi();
 
   const pdfRef = React.useRef(null);
   const exportManager = new ExportManager();
 
  const handleExport = async () => {
-    setExporting(true);
-    setExportProgress(0);
-
-    try {
-      let exportedFiles = [];
-
-     
-      const imagePath = await exportManager.exportPageToImage(
-        urlImage,
-        currentPage,
-        { format:'png', quality: 100, scale: 2.0 }
-      );
-      exportedFiles = [imagePath];
-      setExportProgress(100);
-
-     
-
-      // Download to public storage (Android)
-      if (FileDownloader) {
-        for (let i = 0; i < exportedFiles.length; i++) {
-          await FileDownloader.downloadToPublicFolder(
-            exportedFiles[i],
-            `page-${i + 1}.png`,
-            `image/png`
-          );
-        }
-      }
-         setExporting(false);
-      setShowExportMenu(false);
-
-      // Show success
-      Alert.alert(
-        'Export Complete',
-        `Exported ${exportedFiles.length} page(s) as PNG`,
-        [
-          { text: 'Done', style: 'cancel' },
-          FileManager && {
-            text: 'Open Folder',
-            onPress: () => FileManager.openDownloadsFolder()
-          },
-          {
-            text: 'Share',
-            onPress: () => exportManager.share(exportedFiles[0], { type: 'file' })
-          }
-        ].filter(Boolean)
-      );
-
-    } catch (error) {
-      setExporting(false);
-      Alert.alert('Export Failed');
-    }
+  
+   
   };
 
+
   useEffect(() => {
-    console.log('Received index:', index);
-    console.log(document);
-   
+    if (document) {
+      setPagesData(document.pagesDocument);
+    }
+  }, [document]);
+
+  useEffect(() => {
+
     const extractContent = async () => {
       if (document) {
 
         const cleanPath = document.uri.replace('file://', '');
         setUrlImage(cleanPath);
+
+        await extractTextFromPdf(cleanPath, document.name);
       }
     };
     

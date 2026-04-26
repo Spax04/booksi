@@ -20,6 +20,26 @@ const reducers = {
         ...state,
         uploadedDocuments: updateDocs as IRootState['uploadedDocuments'],
         }
+    },
+
+    setPageDataToDocumentObject: (state :IRootState, action: PayloadAction<{name: string, text: string, imageUri?: string}>) => {
+        let updateDocs = state.uploadedDocuments.filter(doc => doc.name !== action.payload.name);
+
+        updateDocs[0]?.pagesDocument.push({
+            text: action.payload.text,
+            imageUri: action.payload.imageUri
+        });
+
+        return{...state, uploadedDocuments: updateDocs as IRootState['uploadedDocuments']}
+    },
+
+    setPagesCount: (state :IRootState, action: PayloadAction<{name: string, pageCount: number}>) => {
+        let updateDocs = state.uploadedDocuments.filter(doc => doc.name !== action.payload.name);
+        if(updateDocs[0]) {
+            updateDocs[0].pageCount = action.payload.pageCount;
+        }
+
+        return{...state, uploadedDocuments: updateDocs as IRootState['uploadedDocuments']}
     }
 }
 
