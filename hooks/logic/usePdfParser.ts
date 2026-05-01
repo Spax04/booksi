@@ -6,7 +6,9 @@ import { documentsActions } from '../../store/documents/slice';
 import { IDocumentObject } from '@/store/documents/types';
 import { ExportManager } from 'react-native-pdf-jsi/src/managers/ExportManager';
 import { useGeminiApi } from './useGeminiApi';
-
+import * as BackgroundTask from 'expo-background-task';
+import * as TaskManager from 'expo-task-manager';
+import { BACKGROUND_TASKS_IDENTIFIERS } from '@/utils/enums';
 
 // {
 //   "candidates": [
@@ -50,13 +52,24 @@ const  usePdfParser = () => {
     const exportManager = new ExportManager();
     const { imageToText } = useGeminiApi();
 
+
+    TaskManager.defineTask(BACKGROUND_TASKS_IDENTIFIERS.TEXT_CONVERSION, async (params :any) => {
+        try {
+            await extractTextFromPdf(params.filePath, params.documentName);
+        } catch (error) {
+            console.error('Failed to execute the background task:', error);
+                return BackgroundTask.BackgroundTaskResult.Failed;
+            }
+            return BackgroundTask.BackgroundTaskResult.Success;
+    });
+
     const extractTextFromPdf = async (filePath: string, documentName: string) => {
         setIsLoading(true);
 
         try {
             const pages = await getPageCount(filePath);
 
-            for (let i = 1; i <= pages/2; i++) {
+            for (let i = 1; i <= 2; i++) {  //! for testing, only converting helf of the pages
 
                 const imagePath = await exportManager.exportPageToImage(
                     filePath,
@@ -65,11 +78,12 @@ const  usePdfParser = () => {
                 );
                 
                 const text = await imageToText(imagePath);
-                // dispatch(documentsActions.setPageDataToDocumentObject({
-                //     name: documentName,
-                //     text: text || '',
-                //     imageUri: imagePath
-                // }));
+                const pageText = typeof text === 'string' ? text : text ? JSON.stringify(text) : '';
+                dispatch(documentsActions.setPageDataToDocumentObject({
+                    name: documentName,
+                    text: pageText,
+                    imageUri: imagePath
+                }));
              }
 
             
@@ -80,14 +94,41 @@ const  usePdfParser = () => {
         }
     };
 
+    const convertDocumentToAudio = async (filePath: string, documentName: string) => {
+        setIsLoading(true);
+    
+        try {
+            const pages = await getPageCount(filePath);
+        }
+        catch (err) {
+            setError('Audio conversion failed');
+        } finally {
+            setIsLoading(false);
+        }   
+    };
+
     const pickPdfDocument = async () => {
         setIsLoading(true);
         const doc = await DocumentPicker.getDocumentAsync({
             type: 'application/pdf',
         });
 
+
         if (doc?.assets && doc.assets.length > 0) {
-            dispatch(documentsActions.setNewDocumnetObject(doc.assets[0] as IDocumentObject));
+            const pagesCount = await getPageCount(doc.assets[0].uri.replace('file://', ''));
+
+            const newDocumentObject: IDocumentObject = {
+                uri: doc.assets[0].uri,
+                name: doc.assets[0].name,
+                size: doc.assets[0].size as number,
+                mimeType: doc.assets[0].mimeType as string,
+                lastModified: doc.assets[0].lastModified,
+                pagesDocument: [],
+                pageCount: pagesCount,
+                isConverted: false
+            };
+            
+            dispatch(documentsActions.setNewDocumnetObject(newDocumentObject));
         }
         setIsLoading(false);
     };

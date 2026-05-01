@@ -60,7 +60,8 @@
           ]
         }
       ],
-      "react-native-pdf-jsi"
+      "react-native-pdf-jsi",
+      "expo-background-task"
     ],
     "experiments": {
       "typedRoutes": true,

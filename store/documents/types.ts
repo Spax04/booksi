@@ -10,6 +10,7 @@ export interface IDocumentObject {
   lastModified: number;
   pagesDocument: IPageDocument[];
   pageCount: number;
+  isConverted: boolean;
 }
 
 export interface IPageDocument {

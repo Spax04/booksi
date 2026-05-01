@@ -9,7 +9,7 @@ const useGeminiApi = () => {
     const [error, setError] = useState<string | null>(null);
 
     const options : GoogleGenAIOptions = {
-        apiKey:''
+        apiKey:'asdaw'
     }
     const genAI = new GoogleGenAI(options);
 
@@ -35,7 +35,7 @@ const useGeminiApi = () => {
             model: "gemini-3-flash-preview",
             contents: contents,
             });
-            console.log("gemini response",response.candidates?.[0]?.content);
+            console.log("gemini response text",response.candidates?.[0]?.content);
 
             return response!.candidates?.[0]?.content || '';
         } catch (err) {
@@ -45,7 +45,50 @@ const useGeminiApi = () => {
         }
     }
 
-    return { imageToText, isLoading, error };
+    const textToSpeech = async (text: string, documentName: string) => {
+        setIsLoading(true);
+        try {
+             if (!text.trim()) {
+                throw new Error("Text is empty");
+            }
+            const response = await genAI.models.generateContent({
+                model: "gemini-3.1-flash-tts-preview",
+                contents: [{ parts: [{ text: 'Say cheerfully: Have a wonderful day!' }] }],
+                config: {
+                    responseModalities: ['AUDIO'],
+                    speechConfig: {
+                        voiceConfig: {
+                            prebuiltVoiceConfig: { voiceName: 'Kore' },
+                        },
+                    },
+                },
+            });
+
+           const base64Data = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+
+            if (!base64Data) {
+                throw new Error("No audio data received from Gemini");
+            }
+
+            // 2. Prepare the File Path (Replace spaces in name for safety)
+            const file = new File(Paths.document,`${FileSystem.documentDirectory}${documentName.replace(/\s+/g, '_').toLowerCase()}.wav`);
+            file.create();
+            const safeName = documentName.replace(/\s+/g, '_').toLowerCase();
+            const fileUri = `${FileSystem.documentDirectory}${safeName}.wav`;
+
+            // 3. Write directly to Expo FileSystem (No Buffer needed)
+            await FileSystem.Paths.(fileUri, base64Data, {
+                encoding: FileSystem.EncodingType.Base64,
+            });
+
+            console.log("Audiobook saved successfully at:", fileUri);
+        } catch (err) {
+            setError('Text to speech conversion failed');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+    return { imageToText,textToSpeech, isLoading, error };
 
 }
 
