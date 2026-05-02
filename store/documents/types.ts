@@ -16,4 +16,5 @@ export interface IDocumentObject {
 export interface IPageDocument {
   text: string;
   imageUri?: string;
+  audioUri?: string;
 }

@@ -1,47 +1,57 @@
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Link } from '@/components/ui/link';
 import { Text } from '@/components/ui/text';
 import { View } from '@/components/ui/view';
-import { useColor } from '@/hooks/useColor';
 import { Icon } from '@/components/ui/icon';
 import { Upload, Trash, BookDown,LibraryBig,FileText, Play  } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import * as DocumentPicker from 'expo-document-picker';
-import { clampRGBA } from 'react-native-reanimated/lib/typescript/Colors';
-import { File, Directory, Paths } from 'expo-file-system';
-import { extractText, getPageCount, isAvailable } from 'expo-pdf-text-extract';
 import { ScrollView } from '@/components/ui/scroll-view';
 import { useEffect } from 'react';
 import { usePdfParser } from '@/hooks/logic/usePdfParser';
 import { useAppSelector } from '@/hooks/useAppStore';
 import { getDocumentList } from '@/store/documents/selectors';
-import { BORDER_RADIUS } from '@/theme/globals';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch } from 'react-redux';
 import { documentsActions } from '@/store/documents/slice';
 import { router } from 'expo-router';
-import { Pressable } from 'react-native';
+import { Alert, Pressable } from 'react-native';
 import { Progress } from '@/components/ui/progress';
 import { IDocumentObject } from '@/store/documents/types';
-
+import * as BackgroundTask from 'expo-background-task';
+import * as TaskManager from 'expo-task-manager';
+import { createWorkletRuntime, runOnRuntime } from 'react-native-worklets';
 
 export default function HomeScreen() {
-  const {pickPdfDocument, isLoading, error} = usePdfParser();
+  const {pickPdfDocument, convertPdfToAudio, isLoading, error,conversionProgress} = usePdfParser();
   const uploadedDocuments = useAppSelector(getDocumentList);
   const dispatch = useDispatch();
+  const backgroundRuntime = createWorkletRuntime({ name: 'background' });
+
 
 useEffect(() => {
     console.log([...uploadedDocuments]);
   }, [uploadedDocuments]);
 
+  useEffect(() => {
+   
+  }, [conversionProgress]);
+
   const removeDocument = (doc: typeof uploadedDocuments[number]) => {
     dispatch(documentsActions.removeSelectedDocumnetObject(doc));
   }
 
-  function startConversion(doc: IDocumentObject): void {
-    throw new Error('Function not implemented.');
+  const startConversion = async (doc: IDocumentObject) => {
+  
+        await convertPdfToAudio(doc.uri, doc.name);
+    
   }
+
+const test = async () => {
+
+    console.log([...uploadedDocuments]);
+}
+
+  
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
@@ -55,6 +65,7 @@ useEffect(() => {
               marginTop: 24,
               flex: 1,
             }}>
+             
               <LinearGradient
                 colors={['#00B4DB', '#0083B0']}
                 start={{ x: 0, y: 0 }}
@@ -75,10 +86,9 @@ useEffect(() => {
               <Text variant='subtitle' style={{ marginBottom: 22 }}>
                 Uploaded (Not converted)
               </Text>
-              {Array.isArray(uploadedDocuments) && uploadedDocuments.length > 0 ? (
+              {Array.isArray(uploadedDocuments) && uploadedDocuments.length > 0 && uploadedDocuments.some((doc) => !doc.isConverted) ? (
                 uploadedDocuments.filter((doc) => !doc.isConverted).map((doc, index) => (
-                  <Pressable key={index} onPress={() => router.push({ pathname: '/speech', params: { index: doc.name } })}>
-                    <Card  style={{ marginBottom: 12 }}>
+                    <Card key={index} style={{ marginBottom: 12 }}>
                       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                         <Icon name={FileText} size={24}/>
                         <Text style={{ fontWeight: 'bold', color: '#000', flex: 10 }}>{doc.name}</Text>
@@ -111,17 +121,12 @@ useEffect(() => {
                             Converting document to audio                         
                           </Text>
                           <Text variant='body' style={{ fontWeight: '500' }}>
-                            55%
+                            {Math.round(conversionProgress)}%
                           </Text>
                         </View>
-                        <Progress value={55} height={10} />
-                        <Text variant='caption' style={{ color: '#666' }}>
-                          2 of 4 tasks completed
-                        </Text>
+                        <Progress value={conversionProgress} height={10} />
                       </View>
                     </Card>
-                  </Pressable>
-
                 ))
               ) : (
                 <View style={{ alignItems: 'center', justifyContent: 'center', padding: 20 }}>
@@ -144,20 +149,39 @@ useEffect(() => {
             <Text variant='subtitle' style={{ marginBottom: 22 }}>Ready to play</Text>
               {Array.isArray(uploadedDocuments) && uploadedDocuments.length > 0 && uploadedDocuments.some((doc) => doc.isConverted) ? (
                 uploadedDocuments.filter((doc) => doc.isConverted).map((doc, index) => (
-                  <Pressable key={index} onPress={() => router.push({ pathname: '/speech', params: { index: doc.name } })}>
-                    <Card  style={{ marginBottom: 12 }}>
+                    <Card key={index} style={{ marginBottom: 12 }}>
                       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <Icon name={FileText} size={24}/>
                         <Text style={{ fontWeight: 'bold', color: '#000', flex: 10 }}>{doc.name}</Text>
+
                         <Button
                           icon={Trash}
                           style={{ backgroundColor: 'red', flex:2, maxWidth: 80 }}
                           textStyle={{ color: 'white', fontWeight: 'bold' }}
                           onPress={() => removeDocument(doc)}
                         />
+                      </View>                      
+                      <View style={{ gap: 8, marginTop: 12 }}>
+                        <View
+                          style={{
+                            flexDirection: 'row',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                          }}
+                        >
+                          <Text variant='caption' style={{ fontWeight: '600' }}>
+                            Page count: {doc.pageCount}
+                          </Text>
+                        </View>
+                        <Button
+                          icon={Play} // Use a relevant "process" or "play" icon
+                          style={{ backgroundColor: '#343a40', borderRadius: 20, paddingHorizontal: 15 }}
+                          textStyle={{ color: 'white', fontWeight: 'bold', fontSize: 12 }}
+                          onPress={() => router.push({ pathname: '/speech', params: { index: doc.name } })}
+                        > Play</Button>
+                        
                       </View>
                     </Card>
-                    
-                  </Pressable>
                 ))
               ) : (
                 <View style={{ alignItems: 'center', justifyContent: 'center', padding: 20 }}>

@@ -3,13 +3,16 @@ import { useAppDispatch } from "../useAppStore";
 import { useState } from "react";
 import { File, Directory, Paths } from 'expo-file-system';
 import * as FileSystem from 'expo-file-system';
+import { documentsActions } from "@/store/documents/slice";
+import { useLogicUtils } from "./utils";
 const useGeminiApi = () => {
     const dispatch = useAppDispatch();
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const { pcmToWav } = useLogicUtils();
 
     const options : GoogleGenAIOptions = {
-        apiKey:'asdaw'
+        apiKey:'',
     }
     const genAI = new GoogleGenAI(options);
 
@@ -45,15 +48,26 @@ const useGeminiApi = () => {
         }
     }
 
-    const textToSpeech = async (text: string, documentName: string) => {
+    const textToSpeech = async (text: string, documentName: string,pageNumber: number) => {
         setIsLoading(true);
         try {
              if (!text.trim()) {
                 throw new Error("Text is empty");
             }
+
+            const promptText = `
+                Please read the following text as an audiobook narrator.
+                Speak slowly, clearly, and in a pleasant manner.
+                Use a calm, expressive tone, with natural pauses between sentences.
+
+                Text:
+                ${text}
+                `;
+
+            console.log("Converting to audio in progress");
             const response = await genAI.models.generateContent({
                 model: "gemini-3.1-flash-tts-preview",
-                contents: [{ parts: [{ text: 'Say cheerfully: Have a wonderful day!' }] }],
+                contents: [{ parts: [{ text: promptText }] }],
                 config: {
                     responseModalities: ['AUDIO'],
                     speechConfig: {
@@ -64,24 +78,21 @@ const useGeminiApi = () => {
                 },
             });
 
-           const base64Data = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+            console.log('full audio respone', response);
+            const data : any = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+            //console.log("response audio:" , response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data);
 
-            if (!base64Data) {
-                throw new Error("No audio data received from Gemini");
-            }
+            const fileUri = `${documentName}_page${pageNumber}.wav`;            
 
-            // 2. Prepare the File Path (Replace spaces in name for safety)
-            const file = new File(Paths.document,`${FileSystem.documentDirectory}${documentName.replace(/\s+/g, '_').toLowerCase()}.wav`);
-            file.create();
-            const safeName = documentName.replace(/\s+/g, '_').toLowerCase();
-            const fileUri = `${FileSystem.documentDirectory}${safeName}.wav`;
+            const file  = new File(Paths.document,fileUri);
 
-            // 3. Write directly to Expo FileSystem (No Buffer needed)
-            await FileSystem.Paths.(fileUri, base64Data, {
-                encoding: FileSystem.EncodingType.Base64,
-            });
-
-            console.log("Audiobook saved successfully at:", fileUri);
+            const convertedWavBase64 = pcmToWav(data);
+            console.log("convertedWavBase64", convertedWavBase64);
+            file.write(convertedWavBase64,{encoding: 'base64'});
+            //console.log("Audio with url saved: ",);
+           return file.uri;
+            
+            //console.log("Audiobook saved successfully at:", fileUri);
         } catch (err) {
             setError('Text to speech conversion failed');
         } finally {
@@ -93,3 +104,4 @@ const useGeminiApi = () => {
 }
 
 export{ useGeminiApi };
+

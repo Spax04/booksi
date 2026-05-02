@@ -15,6 +15,7 @@ import 'react-native-reanimated';
 import { Provider } from 'react-redux';
 import { store, persistor } from '../store';
 import { PersistGate } from 'redux-persist/integration/react';
+import ToastManager from 'toastify-react-native'
 
 SplashScreen.setOptions({
   duration: 200,
@@ -92,6 +93,7 @@ export default function RootLayout() {
       </ThemeProvider>
       </PersistGate>
       </Provider>
+      <ToastManager />
     </GestureHandlerRootView>
   );
 }
