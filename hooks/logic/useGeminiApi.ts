@@ -12,7 +12,7 @@ const useGeminiApi = () => {
     const { pcmToWav } = useLogicUtils();
 
     const options : GoogleGenAIOptions = {
-        apiKey:'',
+        apiKey:'AIzaSyB30Rw-MzlWeQxGZ6PB8NxMb4rAgH0ZxUo',
     }
     const genAI = new GoogleGenAI(options);
 

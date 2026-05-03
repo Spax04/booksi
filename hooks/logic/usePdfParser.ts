@@ -29,7 +29,7 @@ const  usePdfParser = () => {
             const pages = 3; //! for testing
         const cleanPath = filePath.replace('file://', '');
 
-            for (let i = 1; i <= pages; i++) {  //! for testing, only converting 2 pages
+            for (let i = 1; i <= pages; i++) { 
 
                 console.log("Converting image to text number: ",i);
                 const imagePath = await exportManager.exportPageToImage(

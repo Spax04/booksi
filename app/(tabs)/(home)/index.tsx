@@ -103,28 +103,29 @@ const test = async () => {
                       {/*"Progreess bar"*/}
                       
                       <View style={{ gap: 8, marginTop: 12 }}>
-
-                        <Button
+                        {!isLoading ? (<Button
                           icon={Play} // Use a relevant "process" or "play" icon
                           style={{ backgroundColor: '#343a40', borderRadius: 20, paddingHorizontal: 15 }}
                           textStyle={{ color: 'white', fontWeight: 'bold', fontSize: 12 }}
                           onPress={() => startConversion(doc)}
-                        > Convert</Button>
-                        <View
-                          style={{
-                            flexDirection: 'row',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                          }}
-                        >
-                          <Text variant='caption' style={{ fontWeight: '600' }}>
-                            Converting document to audio                         
-                          </Text>
-                          <Text variant='body' style={{ fontWeight: '500' }}>
-                            {Math.round(conversionProgress)}%
-                          </Text>
-                        </View>
-                        <Progress value={conversionProgress} height={10} />
+                        > Convert</Button>) :(
+                           <><View
+                            style={{
+                              flexDirection: 'row',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                            }}
+                          >
+                            <Text variant='caption' style={{ fontWeight: '600' }}>
+                              Converting document to audio
+                            </Text>
+                            <Text variant='body' style={{ fontWeight: '500' }}>
+                              {Math.round(conversionProgress)}%
+                            </Text>
+                          </View><Progress value={conversionProgress} height={10} /></>)
+                        }
+                        
+                       
                       </View>
                     </Card>
                 ))

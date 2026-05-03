@@ -9,8 +9,8 @@ import { Button } from '@/components/ui/button';
 import { Play ,Pause, SkipBack, SkipForward} from 'lucide-react-native';
 import React from 'react';
 import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
-import { File, Directory, Paths } from 'expo-file-system';
 import { Pressable, ScrollView,StyleSheet } from 'react-native';
+import Markdown from 'react-native-markdown-display';
 
 const SPEEDS = [1, 1.5, 2, 0.75];
 
@@ -129,9 +129,9 @@ const handleSelectPage = useCallback((pageIndex: number) => {
               <Text style={styles.speedText}>{SPEEDS[speedIdx]}×</Text>
             </Pressable>
 
-            {/* <Pressable onPress={() => handleSkip(-15)} style={styles.skipBtn}>
+             <Pressable onPress={() => handleSkip(-15)} style={styles.skipBtn}>
               <SkipBack size={20} color="#888" />
-            </Pressable> */}
+            </Pressable> 
 
             <Button
               onPress={handlePlayPause}
@@ -143,13 +143,24 @@ const handleSelectPage = useCallback((pageIndex: number) => {
                 : <Play size={20} color="#fff" fill="#fff" />
               }
             </Button>
-{/* 
+
             <Pressable onPress={() => handleSkip(15)} style={styles.skipBtn}>
               <SkipForward size={20} color="#888" />
-            </Pressable> */}
+            </Pressable> 
 
             <View style={{ width: 44 }} />
           </View>
+            <ScrollView style={{flex:4}}
+        contentContainerStyle={{ padding: 32, gap: 12}}
+        showsVerticalScrollIndicator={false}>
+          <Markdown style={{
+      body: { color: '#000', fontSize:18 }, // Default text color
+      heading1: { fontWeight: 'bold', fontSize: 24 },
+      strong: { fontWeight: 'bold' } // Handles the **stars**
+    }}>
+            {pages[selectedPage].text}
+          </Markdown>
+            </ScrollView>
         </View>
       )}
 
