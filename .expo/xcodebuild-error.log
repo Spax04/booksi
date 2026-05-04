@@ -1,0 +1,6 @@
+2026-05-04 14:17:09.974 xcodebuild[27988:1417634] Writing error result bundle to /var/folders/tp/f67_31c5229cfq3c1rgl5h0w0000gn/T/ResultBundle_2026-04-05_14-17-0009.xcresult
+xcodebuild: error: Unable to find a destination matching the provided destination specifier:
+		{ id:FD843819-9DF7-4C64-A9BF-D39B29092BC7 }
+
+	Ineligible destinations for the "booksi" scheme:
+		{ platform:iOS, id:dvtdevice-DVTiPhonePlaceholder-iphoneos:placeholder, name:Any iOS Device, error:iOS 26.4 is not installed. Please download and install the platform from Xcode > Settings > Components. }
