@@ -63,6 +63,9 @@ const reducers = {
         });
 
         return{...state, uploadedDocuments: updateDocs as IRootState['uploadedDocuments']}
+    },
+    clearAll : (state: IRootState) =>{
+        return{...state, uploadedDocuments: [] as IRootState['uploadedDocuments']}
     }
 }
 
