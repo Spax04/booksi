@@ -38,13 +38,14 @@ const reducers = {
         return{...state, uploadedDocuments: updateDocs as IRootState['uploadedDocuments']}
     },
 
-    setAudioUriToPageDocument: (state :IRootState, action: PayloadAction<{name: string, pageNumber: number, audioUri: string}>) => {
+    setAudioUriToPageDocument: (state :IRootState, action: PayloadAction<{name: string, pageNumber: number, audioUri: string, isPageReady: boolean}>) => {
         let updateDocs = state.uploadedDocuments.map(doc => {
             if(doc.name === action.payload.name) {
                 const updatedPages = [...doc.pagesDocument];
                 if(action.payload.audioUri) {
-                    updatedPages[action.payload.pageNumber] = { ...updatedPages[action.payload.pageNumber], audioUri: action.payload.audioUri };
+                    updatedPages[action.payload.pageNumber] = { ...updatedPages[action.payload.pageNumber], audioUri: action.payload.audioUri, isPageReady: action.payload.isPageReady};
                 }
+
                 return { ...doc, pagesDocument: updatedPages };
             }
             return doc;

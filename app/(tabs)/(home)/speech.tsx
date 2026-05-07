@@ -76,7 +76,7 @@ const handleSelectPage = useCallback((pageIndex: number) => {
       >
         <Text style={styles.sectionLabel}>Pages</Text>
 
-        {pages.map((page, i) => {
+        {pages.filter(p => p.isPageReady).map((page, i) => {
           const isSelected = selectedPage === i;
           const isPlaying = isSelected && status.playing;
           return (
