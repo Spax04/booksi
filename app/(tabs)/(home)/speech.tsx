@@ -29,23 +29,16 @@ export default function SpeechScreen() {
   const [selectedPage, setSelectedPage] = useState<number | null>(null);
   const pages = document?.pagesDocument ?? [];
 
-// Pass null if it doesn't exist yet, so the player waits.
-const player = useAudioPlayer(null);
-const status = useAudioPlayerStatus(player);
+  const player = useAudioPlayer(null);
+  const status = useAudioPlayerStatus(player);
 
-
-  useEffect(() => {
-    if (document) {
-      console.log(document);
-    }
-  }, [document]);
+  useEffect(() => {}, [document]);
 
 useEffect(() => {
     player.setPlaybackRate(SPEEDS[speedIdx]);
   }, [speedIdx]);
   
 const handleSelectPage = useCallback((pageIndex: number) => {
-  console.log(pageIndex);
     if (selectedPage !== null) player.pause();
       const audioUri = document?.pagesDocument?.[pageIndex]?.audioUri;
       player.replace({ uri: audioUri });

@@ -5,14 +5,17 @@ import { File, Directory, Paths } from 'expo-file-system';
 import * as FileSystem from 'expo-file-system';
 import { documentsActions } from "@/store/documents/slice";
 import { useLogicUtils } from "./utils";
+import { useAppSelector } from "../useAppStore";
+import {getGeminiApiKey} from "../../store/credentials/selectors"
 const useGeminiApi = () => {
     const dispatch = useAppDispatch();
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const { pcmToWav } = useLogicUtils();
+    const geminiApiKey = useAppSelector(getGeminiApiKey)
 
     const options : GoogleGenAIOptions = {
-        apiKey:'',
+        apiKey: geminiApiKey,
     }
     const genAI = new GoogleGenAI(options);
 
@@ -38,7 +41,6 @@ const useGeminiApi = () => {
             model: "gemini-3-flash-preview",
             contents: contents,
             });
-            console.log("gemini response text",response.candidates?.[0]?.content);
 
             return response!.candidates?.[0]?.content || '';
         } catch (err) {
@@ -64,7 +66,6 @@ const useGeminiApi = () => {
                 ${text}
                 `;
 
-            console.log("Converting to audio in progress");
             const response = await genAI.models.generateContent({
                 model: "gemini-3.1-flash-tts-preview",
                 contents: [{ parts: [{ text: promptText }] }],
@@ -78,21 +79,16 @@ const useGeminiApi = () => {
                 },
             });
 
-            console.log('full audio respone', response);
             const data : any = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-            //console.log("response audio:" , response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data);
 
             const fileUri = `${documentName}_page${pageNumber}.wav`;            
 
             const file  = new File(Paths.document,fileUri);
 
             const convertedWavBase64 = pcmToWav(data);
-            console.log("convertedWavBase64", convertedWavBase64);
             file.write(convertedWavBase64,{encoding: 'base64'});
-            //console.log("Audio with url saved: ",);
            return file.uri;
             
-            //console.log("Audiobook saved successfully at:", fileUri);
         } catch (err) {
             setError('Text to speech conversion failed');
         } finally {

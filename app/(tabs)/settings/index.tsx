@@ -6,14 +6,30 @@ import { ModeToggle } from '@/components/ui/mode-toggle';
 import { Lock, Trash, ChevronRight } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { TextInput, TouchableOpacity, Switch } from 'react-native';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '@/hooks/useAppStore';
 import { documentsActions } from '@/store/documents/slice';
+import { credentialsActions } from '@/store/credentials/slice';
+import { getGeminiApiKey } from '@/store/credentials/selectors';
 
 export default function SettingsScreen() {
   const [apiKey, setApiKey] = useState('');
   const [showKey, setShowKey] = useState(false);
   const dispatch = useAppDispatch();
+  const savedApiKey = useAppSelector(getGeminiApiKey);
+
+  // Load saved API key from Redux on mount
+  useEffect(() => {
+    if (savedApiKey) {
+      setApiKey(savedApiKey);
+    }
+  }, []);
+
+  // Save to Redux when user changes the value
+  const handleApiKeyChange = (value: string) => {
+    setApiKey(value);
+    dispatch(credentialsActions.setGeminiApiKey(value));
+  };
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
@@ -36,7 +52,7 @@ export default function SettingsScreen() {
                 <Lock size={14} color="#9ca3af" />
                 <TextInput
                   value={apiKey}
-                  onChangeText={setApiKey}
+                  onChangeText={handleApiKeyChange}
                   secureTextEntry={!showKey}
                   placeholder="sk-..."
                   placeholderTextColor="#9ca3af"

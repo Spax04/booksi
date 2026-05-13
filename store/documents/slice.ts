@@ -21,7 +21,7 @@ const documentsActions = slice.actions;
 const documentsPersistConfig = {
     key: PERSIST_KEYS.DOCUMENTS,
     storage: AsyncStorage,
-    whitelist: []
+    whitelist: ['uploadedDocuments']
 };
 
 export {

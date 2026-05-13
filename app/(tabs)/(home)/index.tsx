@@ -6,7 +6,7 @@ import { Icon } from '@/components/ui/icon';
 import { Upload, Trash, BookDown,LibraryBig,FileText, Play, CircleCheck, CircleX,FileCog   } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ScrollView } from '@/components/ui/scroll-view';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { usePdfParser } from '@/hooks/logic/usePdfParser';
 import { useAppSelector } from '@/hooks/useAppStore';
 import { getDocumentList } from '@/store/documents/selectors';
@@ -22,38 +22,35 @@ import * as TaskManager from 'expo-task-manager';
 import { createWorkletRuntime, runOnRuntime } from 'react-native-worklets';
 import { Collapsible } from '@/components/ui/collapsible';
 import { Image } from 'expo-image';
+import { getGeminiApiKey } from '@/store/credentials/selectors';
+import { Toast } from 'toastify-react-native';
 
 export default function HomeScreen() {
-  const {pickPdfDocument, convertPdfToAudio, isLoading, error} = usePdfParser();
+  const {pickPdfDocument, convertPdfToAudio, isLoading, error, setIsCancaled } = usePdfParser();
   const uploadedDocuments = useAppSelector(getDocumentList);
   const dispatch = useDispatch();
-  const backgroundRuntime = createWorkletRuntime({ name: 'background' });
+  const geminiApiKey = useAppSelector(getGeminiApiKey)
 
 
-useEffect(() => {
-    console.log([...uploadedDocuments]);
-  }, [uploadedDocuments]);
-
-  useEffect(() => {
-   
-  }, [isLoading]);
+  useEffect(() => {}, [uploadedDocuments,isLoading]);
 
   const removeDocument = (doc: typeof uploadedDocuments[number]) => {
     dispatch(documentsActions.removeSelectedDocumnetObject(doc));
   }
 
-  const startConversion = async (doc: IDocumentObject) => {
-  
-        await convertPdfToAudio(doc.uri, doc.name);
-    
+
+const startConversion = async (doc: IDocumentObject) => {
+  if (geminiApiKey.length === 0) {
+    Toast.error("API key is required before converting.");
+    return;
   }
+  await convertPdfToAudio(doc.uri, doc.name);
+};
 
-const test = async () => {
-
-    console.log([...uploadedDocuments]);
-}
-
-  
+const cancelConversion = () => {
+  setIsCancaled(true);
+  Toast.info("Conversion cancelled");
+};
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
@@ -132,7 +129,15 @@ const test = async () => {
                               alignItems: 'center',
                             }}
                           >
-                           <View>
+                           <View style={{flex:1}}>
+                            <Button
+                                icon={CircleX}
+                                style={{ backgroundColor: '#343a40', borderRadius: 20, paddingHorizontal: 15 }}
+                                textStyle={{ color: 'white', fontWeight: 'bold', fontSize: 12 }}
+                                onPress={() => cancelConversion()}
+                              >
+                                Cancel
+                              </Button>
                             <Text variant='caption' style={{ fontWeight: '600' }}>
                               Converting document to audio
                             </Text>

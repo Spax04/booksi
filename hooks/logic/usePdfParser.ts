@@ -2,7 +2,7 @@ import { extractText, getPageCount, isAvailable } from 'expo-pdf-text-extract';
 import * as DocumentPicker from 'expo-document-picker';
 import { useAppDispatch } from '../useAppStore';
 import { useAppSelector } from '@/hooks/useAppStore';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { documentsActions } from '../../store/documents/slice';
 import { IDocumentObject } from '@/store/documents/types';
 import { ExportManager } from 'react-native-pdf-jsi/src/managers/ExportManager';
@@ -16,6 +16,7 @@ const  usePdfParser = () => {
     const dispatch = useAppDispatch();
     const uploadedDocuments = useAppSelector(getDocumentList)
     const [isLoading, setIsLoading] = useState(false);
+    const isCanceledRef = useRef(false);
     const [error, setError] = useState<string | null>(null);
     const exportManager = new ExportManager();
     const { imageToText,textToSpeech } = useGeminiApi();
@@ -26,25 +27,25 @@ const  usePdfParser = () => {
         setIsLoading(true);
 
         try {
-            //const pages = await getPageCount(filePath);
+            const pages = await getPageCount(filePath);
             const selectedDocument = uploadedDocuments.find(doc => doc.name === documentName);
 
             if(selectedDocument === null){
                 throw Error("Document not exist to convert")
             }
-            console.log("Converting PDF to audio...");
-            const pages = 6; //! for testing
             const cleanPath = filePath.replace('file://', '');
 
-        
-            for (let i = 1; i <= pages; i++) { 
+            for (let i = 1; i <= pages; i++) {
+                if(isCanceledRef.current){
+                    console.log("Conversion has been canceled");
+                    break;
+                }
 
                 if(selectedDocument?.pagesDocument[i-1].isPageReady){
                     console.log(`Page index ${i-1} already converted, skiping`);
                     continue;
                 }
 
-                console.log("Converting image to text number: ",i);
                 const imagePath = await exportManager.exportPageToImage(
                     cleanPath,
                     i,
@@ -66,7 +67,11 @@ const  usePdfParser = () => {
                     imageUri: imagePath
                 }));
 
-                console.log("STARTIN GOCNVERTION TEXT TO AUDIO");
+                if(isCanceledRef.current){
+                    console.log("Conversion has been canceled");
+                    break;
+                }
+
                 const audioUri = await textToSpeech(pageText, documentName, i);
 
                 if(audioUri !== undefined) {
@@ -77,7 +82,6 @@ const  usePdfParser = () => {
                         isPageReady: true
                     }));
 
-                    
                 }
 
             } 
@@ -89,9 +93,6 @@ const  usePdfParser = () => {
                 name: documentName
                 }));
             }
-        
-
-
         } catch (err) {
             setError('Extraction failed');
             console.error(err);
@@ -99,6 +100,7 @@ const  usePdfParser = () => {
             return null;
         }finally {
             setIsLoading(false);
+            isCanceledRef.current = false;
         }
     };
 
@@ -133,7 +135,11 @@ const  usePdfParser = () => {
         setIsLoading(false);
     };
 
-    return { pickPdfDocument, convertPdfToAudio, isLoading, error};
+    const setIsCancaled = (cancelled: boolean) => {
+        isCanceledRef.current = cancelled;
+    };
+
+    return { pickPdfDocument, convertPdfToAudio, isLoading, error, setIsCancaled};
 }
 
 export { usePdfParser };

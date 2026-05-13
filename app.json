@@ -11,8 +11,8 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.anonymous.booksi",
-      "icons":{
-        "dark" : "./assets/icons/ios-dark.png",
+      "icons": {
+        "dark": "./assets/icons/ios-dark.png",
         "light": "./assets/icons/ios-light.png",
         "tinted": "./assets/icons/ios-tinted.png"
       }
@@ -20,9 +20,9 @@
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/icons/adative-icon.png",
-        "backgroundImage": "./assets/icons/adative-icon.png",
-        "monochromeImage": "./assets/icons/adative-icon.png"
+        "foregroundImage": "./assets/icons/adaptive-icon.png",
+        "backgroundImage": "./assets/icons/adaptive-icon.png",
+        "monochromeImage": "./assets/icons/adaptive-icon.png"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": true,
@@ -75,11 +75,19 @@
         }
       ],
       "react-native-pdf-jsi",
-      "expo-background-task"
+      "expo-background-task",
+      "expo-audio"
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "07e84667-ad31-44aa-995a-3caa07e426a5"
+      }
+    },
+    "owner": "spax04"
   }
 }

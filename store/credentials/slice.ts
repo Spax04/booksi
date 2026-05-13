@@ -8,7 +8,6 @@ import {STORE_SLICES, PERSIST_KEYS} from '../../utils/enums'
 
 const initialState: IRootState = {
     GEMINI_API_KEY: '',
-    GEMINI_API_SECRET: '',
 };
 
 export const slice = createSlice({
@@ -22,7 +21,7 @@ const credentialsActions = slice.actions;
 const credentialsPersistConfig = {
     key: PERSIST_KEYS.CREDENTIALS,
     storage: AsyncStorage,
-    whitelist: []
+    whitelist: ['GEMINI_API_KEY']
 };
 
 export {
