@@ -6,3 +6,11 @@ expo-env.d.ts
 # @end expo-cli
 node_modules
 .expo/
+package-lock.json
+/.nyc_output
+/coverage
+/dist
+.idea
+App/appLocal.ts
+env/.env.localDev
+env/.env.localProd
