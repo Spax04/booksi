@@ -1,0 +1,19 @@
+extends ../base.pug
+
+block body
+  br
+  div(style="max-width: 550px; padding-bottom: 20px")
+    p(style='padding: 0px; margin: 0px; font-weight: 600; padding-bottom: 1rem; font-size: 20px; color: #4c6379') #{i18n({ phrase: 'hi', locale })} #{`${receiverName}`},
+    p(style='padding: 0px; margin: 0px; padding-bottom: 1rem; color: #6d8092; line-height: 24px;') #{`${creatorName}`} (#{`${creatorEmail}`}) #{i18n({ phrase: 'hasSubmittedANewTimeoff', locale })}
+    if timeoffs && timeoffs.length > 0
+      ul
+        each val, index in timeoffs
+          li=div
+            p(style='padding: 0px; margin: 0px; margin-top: 2px;')
+              | <span style='color: #000;'>#{i18n({ phrase: 'timeoffType', locale })}</span> <span style='color: #6d8092;'>#{val.type}</span>
+            p(style='padding: 0px; margin: 0px; margin-top: 2px;')
+              | <span style='color: #000;'>#{i18n({ phrase: 'timeoffDate', locale })}</span> <span style='color: #6d8092;'>#{val.dateString}</span>
+
+      p(style='padding: 0px; margin: 0px; margin-top: 2px; color: #A855F7') #{i18n({ phrase: 'totalDays', locale })} #{`${timeInDays}`}.
+
+    p(style='padding: 0px; margin: 0px; margin-top: 2px; color: #A855F7') #{i18n({ phrase: 'logIntoYourAccount', locale })}
