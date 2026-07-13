@@ -35,3 +35,7 @@ export const REFRESH_COOKIE_OPTIONS = {
 export const DEFAULT_REQ_METHOD: Method = 'GET';
 export const TOKEN_KEY = 'BK_AUTH';
 
+export const ROUTES = {
+  
+};
+

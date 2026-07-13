@@ -12,7 +12,6 @@ export interface IRootState {
     external_id: string;
     email: string;
     expiration: string;
-    password: string;
   };
   navigateToDefaultPath: { isNavigate: boolean };
 } 
@@ -25,4 +24,11 @@ export type TPersonnel = {
   email: string;
 };
 
-    
+export type TTokenDetails = {
+  email: string;
+  expiration: string;
+  userName: string;
+  subscription: {
+    plan: string;
+  };
+};

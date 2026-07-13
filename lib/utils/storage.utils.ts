@@ -20,6 +20,16 @@ function getSessionValue<T>(name: string, storage: StorageType = 'localStorage')
   return null;
 }
 
+function setSessionVal<T>(name: string, data: T, storage: StorageType = 'localStorage'): void {
+  const serializedData = JSON.stringify(data);
+  if (storage === 'localStorage') {
+    localStorage.setItem(name, serializedData);
+  } else {
+    sessionStorage.setItem(name, serializedData);
+  }
+}
+
 export {
     getSessionValue,
+    setSessionVal
 }

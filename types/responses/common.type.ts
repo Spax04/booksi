@@ -7,6 +7,10 @@ export type IBaseResponse = {
 };
 
 
+export type TGetSettingsRes = IBaseResponse & {
+  settings: any
+};
+
 
 export type TAxiosError = {
   code: string,

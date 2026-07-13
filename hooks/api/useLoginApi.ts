@@ -1,166 +1,104 @@
-import { useMutation, useQuery } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
-import { useCookies } from 'react-cookie';
-import { jwtDecode } from 'jwt-decode';
+import { router } from 'expo-router';
 
-// Internal Imports
-import { BASE_URL } from '../../lib/utils/constans';
-import { LoginController, UserController } from '../../services';
-import { QUERY_KEYS } from 'web_common/shared-logic/constants';
-import { TLoginReq, TLoginRes, TNewUser, TProfileImage } from 'web_common/shared-logic/types';
-import { TBaseDataResponse } from '../../types';
-import { TOKEN_KEY, TOKEN_KEY_COGNITO, TOKEN_KEY_REFRESH } from '../../data';
-import { hashPassword } from '../../lib/utils/common';
-import { setSessionVal } from '../../lib/utils/storage';
+// Third party
+import { useMutation } from '@tanstack/react-query';
+import {jwtDecode} from 'jwt-decode';
+//import { clarity } from 'react-microsoft-clarity';
 
-// Store & Context
-import { useAppDispatch } from '../useAppStore';
-//import { useAuth } from '../useAuth';
+//import i18n from 'i18next';
+//import ReactGA from 'react-ga4';
+//import { useTranslation } from 'react-i18next';
+import { LoginController } from '../../services';
+import { useAppDispatch, useAppSelector } from '../useAppStore';
 import { authActions } from '../../store/auth/slice';
-import { IRootState } from '../../store/auth/types';
 
-export const useLoginApi = () => {
-  const dispatch = useAppDispatch();
-  const navigate = useNavigate();
-  const [_, setCookie] = useCookies(['user']);
-  const { mutateAsync: changePasswordEmail } = useUpdatePasswordEmailApi();
+// Data
+import { ROUTES, TOKEN_KEY } from '../../lib/utils/constans';
 
-  const loginApi = async (options: TLoginReq & { rememberMe?: boolean }) => {
-    const { email, password, isHashPassword = true, isGoogle } = options;
-    const payload = {
-      email: email?.toLowerCase(),
-      password: isHashPassword ? hashPassword(password) : password,
-      isGoogle,
-    };
+// Types
+import { TAxiosError, TGetSettingsRes, TLoginRes } from '../../types/responses';
+import { TLoginRequest } from '../../types/requests';
 
-    const rsp = await LoginController().login<TLoginRes & { data: { idToken: string; refreshToken: string } }>(
-      payload,
-      { token: '', baseUrl: BASE_URL || '' }
-    );
+// Hooks
+import { useCommonAPI, useUpdateUserAPI } from './useCommonApi';
+import { TTokenDetails } from '../../store/auth/types';
+import { setSessionVal } from '../../lib/utils/storage.utils';
+//import { getSelectedLang } from '../../store/common/selectors';
+import { useError } from '../useCommon';
+//import { useCrisp } from '../../lib/hooks';
+import { useAuth } from '../useAuth';
+import { getAuthenticateUser } from '../../store/auth/selectors';
 
-    if (rsp?.success && 'data' in rsp) {
-      setSessionVal(TOKEN_KEY, rsp.data.authToken, 'localStorage');
-      setSessionVal(TOKEN_KEY_COGNITO, rsp.data.idToken, 'localStorage');
-      setSessionVal(TOKEN_KEY_REFRESH, rsp.data.refreshToken, 'localStorage');
-    }
-    return rsp;
+const loginApi = async (options: TLoginRequest) => {
+  const {
+    email,
+    password,
+    isHashPassword = true,
+  } = options;
+
+  const data = {
+    email: email?.toLowerCase(),
+    password,
   };
+
+  const rsp = await LoginController().login<TLoginRes>(data);
+
+  if (rsp?.success && 'data' in rsp) setSessionVal(TOKEN_KEY, rsp.data.authToken, 'sessionStorage');
+
+  return rsp;
+};
+
+export function useLoginAPI() {
+  const dispatch = useAppDispatch();
+
+  const { getPlatformData } = useCommonAPI();
+
+  const { mutateAsync: mutateUpdateUser } = useUpdateUserAPI();
+  const { handleReqError } = useError();
+  const { getIdToken } = useAuth();
+  const { personnel } = useAppSelector(getAuthenticateUser);
+
 
   return useMutation({
     mutationFn: loginApi,
-    onSuccess: async (rsp, variables) => {
-      if ('error' in rsp && rsp?.error?.response?.status === 400) {
-        await changePasswordEmail(variables.email);
-      }
+    onSuccess: async (rsp: any, variables: any) => {
+      if (rsp.success && 'data' in rsp) {
+        const authToken = rsp.data.authToken || '';
 
-      if (rsp?.success && 'data' in rsp) {
-        const tokenDetails: any = jwtDecode(rsp.data.authToken);
-        
-        dispatch(authActions.setAuthenticateUser({ ...rsp.data, external_id: tokenDetails.external_id } as IRootState['authenticateUser']));
-        dispatch(authActions.setTokenDetails(tokenDetails as IRootState['tokenDetails']));
+        const userData = { ...rsp.data };
 
-        if (variables.rememberMe) {
-          setCookie('user', { email: variables.email, password: variables.password });
+        if (!rsp.data?.user?.settings) {
+          userData.user = {
+            name: userData.personnel.name,
+          };
         }
 
-        if ((window as any)?.ReactNativeWebView) {
-          (window as any)?.ReactNativeWebView.postMessage(JSON.stringify({ personnel: rsp.data.personnel, isLogIn: true }));
+        dispatch(authActions.setAuthenticateUser(userData));
+
+        const tokenDetails: TTokenDetails = jwtDecode(authToken);
+
+        dispatch(authActions.setTokenDetails({
+          ...tokenDetails,
+          external_id: ''
+        }));
+
+        if (variables?.isRegistered) {
+          if (tokenDetails.subscription?.plan === 'free') {
+            router.push({ pathname: '/(tabs)/(home)' });
+          } else {
+           // router.push({ pathname: '/onboarding/invite-team' });
+          }
         }
 
-        if (variables.isRedirect) navigate('/team');
+       
+      } else if (rsp?.error && rsp.error?.response?.status) {
+        handleReqError(rsp.error, variables);
+      } else if ('msg' in rsp) {
+        console.error(`ERROR! login request failed! ${rsp.msg}`);
       }
     },
-  });
-};
-
-export const useRegisterApi = () => {
-  const { mutateAsync: loginMutate } = useLoginApi();
-
-  return useMutation({
-    mutationFn: (newUser: TNewUser) => LoginController().register<TBaseDataResponse>({
-      ...newUser,
-      password: newUser.isCampaign ? (newUser?.password ?? '') : hashPassword(newUser?.password ?? ''),
-    }, { token: '', baseUrl: BASE_URL || '' }),
-    onSuccess: async (data, variables) => {
-      if (data.success) {
-        await loginMutate({ email: variables.email || '', password: variables.password || '', isRedirect: false });
-      }
+    onError: (error: TAxiosError) => {
+      console.error(`ERROR! login request threw an Exception! ${error}`);
     },
   });
-};
-
-export const useUpdatePasswordEmailApi = () => {
-  const { getIdToken } = useAuth();
-  const navigate = useNavigate();
-
-  return useMutation({
-    mutationFn: (email: string) => LoginController().updatePasswordEmail({ email }, { token: getIdToken() || '', baseUrl: BASE_URL || '' }),
-    onSuccess: (rsp: any) => { if (rsp.success) navigate('/resetPasswordPage'); },
-  });
-};
-
-export const useSetPasswordAPI = () => {
-  const { getIdToken } = useAuth();
-  const { mutateAsync: loginMutate } = useLoginApi();
-  const navigate = useNavigate();
-
-  return useMutation({
-    mutationFn: (payload: { password: string; resetKey: string; email: string }) => 
-      LoginController().setPassword(payload, { token: getIdToken() || '', baseUrl: BASE_URL || '' }),
-    onSuccess: async (_, variables) => {
-      await loginMutate({ email: variables.email, password: variables.password, isRedirect: false, isHashPassword: false });
-      navigate('/events');
-    },
-  });
-};
-
-export const useGetPersonnel = (options: { email: string }) => {
-  const { getIdToken } = useAuth();
-  return useQuery({
-    queryKey: [QUERY_KEYS.USER.GET_PERSONNEL],
-    queryFn: async () => {
-      const rsp = await LoginController().getPersonnel<TLoginRes>({ email: options.email?.toLowerCase() }, { token: getIdToken() || '', baseUrl: BASE_URL || '' });
-      return rsp.success && 'data' in rsp ? rsp.data : rsp;
-    },
-  });
-};
-
-export const useGetFollowers = (options: { email: string }) => {
-  const { getIdToken, isLoggedIn } = useAuth();
-  return useQuery({
-    queryKey: [QUERY_KEYS.USER.GET_FOLLOWERS],
-    enabled: isLoggedIn(),
-    queryFn: async () => {
-      const rsp = await LoginController().getFollowers<any>({ email: options.email?.toLowerCase() }, { token: getIdToken() || '', baseUrl: BASE_URL || '' });
-      return rsp.success && 'data' in rsp ? rsp.data : rsp;
-    },
-  });
-};
-
-export const useGetUserById = (options: { id: string }) => {
-  const { getIdToken } = useAuth();
-  return useQuery({
-    queryKey: [QUERY_KEYS.USER.GET_USER_BY_ID],
-    queryFn: async () => {
-      const rsp = await LoginController().getUser<TLoginRes>({ id: options.id?.toLowerCase() }, { token: getIdToken() || '', baseUrl: BASE_URL || '' });
-      return rsp.success && 'data' in rsp ? rsp.data : rsp;
-    },
-  });
-};
-
-export const useAddFieldsToUserApi = () => {
-  const { getIdToken } = useAuth();
-  return useMutation({
-    mutationKey: ['addFields'],
-    mutationFn: (user: any) => UserController().addFieldsBubblesToUser(user, { token: getIdToken() || '', baseUrl: BASE_URL || '' }),
-  });
-};
-
-export const useAddFieldsToExpoUserApi = () => {
-  const { getIdToken } = useAuth();
-  return useMutation({
-    mutationKey: ['addFields'],
-    mutationFn: (options: TNewUser & { images: Array<TProfileImage> }) => 
-      UserController().addFieldsToExpoUser(options, { token: getIdToken() || '', baseUrl: BASE_URL || '' }),
-  });
-};
+}
