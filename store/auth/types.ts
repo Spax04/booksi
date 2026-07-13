@@ -6,6 +6,7 @@ export interface IRootState {
     authToken: string;
     personnel: TPersonnel & {
       external_id?: string;
+      name?: string;
     };
   };
   tokenDetails: {

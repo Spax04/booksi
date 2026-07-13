@@ -51,8 +51,6 @@ const loginApi = async (options: TLoginRequest) => {
 export function useLoginAPI() {
   const dispatch = useAppDispatch();
 
-  const { getPlatformData } = useCommonAPI();
-
   const { mutateAsync: mutateUpdateUser } = useUpdateUserAPI();
   const { handleReqError } = useError();
   const { getIdToken } = useAuth();

@@ -12,6 +12,7 @@ const PERSIST_KEYS = {
 
 const CONTROLLERS = {
     LOGIN: 'login',
+    COMMON: 'common',
 }
 
 export{
