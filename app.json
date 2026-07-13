@@ -1,0 +1,25 @@
+{
+  "expo": {
+    "name": "booksi",
+    "slug": "booksi",
+    "version": "1.0.0",
+    "scheme": "booksi",
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "07e84667-ad31-44aa-995a-3caa07e426a5"
+      }
+    },
+    "owner": "spax04",
+    "android": {
+      "package": "com.spax04.booksi"
+    },
+    "plugins": [
+      "expo-secure-store"
+    ]
+  }
+}
